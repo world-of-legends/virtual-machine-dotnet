@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using wolvm.expressions;
 
 namespace wolvm
 {
@@ -13,29 +14,38 @@ namespace wolvm
         public static int position = 0;
         public static Dictionary<string, VMExpression> expressions = new Dictionary<string, VMExpression>
         {
-            { "beep",  new BeepExpression() },
             { "plus", new PlusExpression() },
             { "_loads", new LoadsExpression() },
             { "typeof", new TypeofExpression() },
-            { "AddString", new AddStringExpression() },
-            { "System.print", new PrintExpression() },
             { "ifelse", new IfExpression() },
-            { "while", new WhileExpression() },
             { "run", new RunExpression() },
-            { "ParseInt", new ParseIntExpression() },
+            { "parseInt", new ParseIntExpression() },
             { "set", new SetExpression() },
-            { "ParseDouble", new ParseDoubleExpression() },
-            { "System.input", new InputExpression() },
-            { "toString", new ToStringExpression() }
+            { "parseDouble", new ParseDoubleExpression() },
+            { "toString", new ToStringExpression() },
+            { "ls", new LessSignExpression() },
+            { "ms", new MoreSignExpression() },
+            { "equals", new EqualsExpression() },
+            { "not", new InversionExpression() },
+            { "length", new LengthExpression() },
+            { "minus", new MinusExpression() },
+            { "multiply", new MultiplyExpression() },
+            { "div", new DivExpression() },
+            { "mod", new ModExpression() },
+            { "and", new AndExpression() },
+            { "or", new OrExpression() },
+            { "getByIndex", new GetElementExpression() }
         };
-        private static bool test = false;
+        public static bool test = false;    
 
         static void Main(string[] args)
         {
             Version version = Assembly.GetEntryAssembly().GetName().Version;
             if (args.Length == 0)
             {
-                Console.Write("World of Legends Virtual Machine v{0}\nCopyright snaulX 2019\nType \"-help\" to get helper", version);
+                Console.Write("World of Legends Virtual Machine v{0}\nCopyright snaulX 2019\nType \"dotnet wolvm.dll -help\" in command line to get helper",
+                    version);
+                Console.ReadKey();
             }
             else
             {
@@ -146,6 +156,7 @@ namespace wolvm
             mainstack.classes.Add("Collection", new wolCollection()); //void
             mainstack.classes.Add("Array", new wolArray()); //Collection
             mainstack.classes.Add("Link", new wolLink()); //void
+            mainstack.classes.Add("bool", new wolBool()); //void
 
             //main cycle
             position = 0;
@@ -213,16 +224,23 @@ namespace wolvm
                         foreach (string dllName in dllNames)
                         {
                             Assembly assembly = null;
+                            string full_path = AppDomain.CurrentDomain.BaseDirectory + dllName.Trim() + ".dll";
                             try
                             {
-                                assembly = Assembly.Load(new AssemblyName(dllName.Trim() + ".dll"));
+                                assembly = Assembly.LoadFrom(full_path);
                             } 
                             catch (Exception ex)
                             {
-                                ThrowVMException($"Library with info {dllName.Trim()} not found {ex.GetType()}", position, ExceptionType.FileNotFoundException);
+                                ThrowVMException($"Library with info {full_path} not found.\n{ex.Message}", position, ExceptionType.FileNotFoundException);
                                 break;
                             }
                             Type mainClass = assembly.GetTypes().FirstOrDefault(t => t != mainType && mainType.IsAssignableFrom(t));
+                            if (test)
+                            {
+                                Console.WriteLine("Framework Info: " + assembly);
+                                Console.WriteLine("Full path to framework: " + full_path);
+                                Console.WriteLine(string.Join<Type>(' ', assembly.GetTypes()));
+                            }
                             if (mainClass != null)
                             {
                                 if (Activator.CreateInstance(mainClass) is VMLibrary mainObj) mainObj.Load();
@@ -320,7 +338,12 @@ namespace wolvm
                     {
                         //test stack
                         Console.WriteLine("Info about program in the end.\nMain stack:");
-                        Console.Write(mainstack.ToString());
+                        Console.WriteLine(mainstack.ToString());
+                        Console.WriteLine("Expressions:");
+                        foreach (string expr_name in expressions.Keys)
+                        {
+                            Console.WriteLine(expr_name);
+                        }
                         Console.WriteLine($"Time of program: {Environment.TickCount - time}");
                     }
                     return;
@@ -355,10 +378,13 @@ namespace wolvm
     public abstract class VMLibrary
     {
         public Stack stack = new Stack();
-        Dictionary<string, VMExpression> expressions = new Dictionary<string, VMExpression>();
+        public Dictionary<string, VMExpression> expressions = new Dictionary<string, VMExpression>();
         public void Load()
         {
-            VirtualMachine.expressions = expressions;
+            foreach (KeyValuePair<string, VMExpression> pair in expressions)
+            {
+                VirtualMachine.expressions.Add(pair.Key, pair.Value);
+            }
             VirtualMachine.mainstack.Add(stack);
         }
     }

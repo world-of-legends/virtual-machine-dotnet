@@ -20,5 +20,10 @@ namespace wolvm
         }
 
         public void Run() => Script.Parse(body);
+
+        public override string ToString()
+        {
+            return "wolvm::mainstack::Block:" + body + ":end";
+        }
     }
 }

@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace wolvm
+namespace wolvm.expressions
 {
-    class BeepExpression : VMExpression
+    public class InversionExpression : VMExpression
     {
         public Value ParseExpression(params Value[] args)
         {
-            Console.Beep();
-            return Value.VoidValue;
+            return new Value(new wolBool(!((wolBool)args[0].type).value));
         }
     }
 }

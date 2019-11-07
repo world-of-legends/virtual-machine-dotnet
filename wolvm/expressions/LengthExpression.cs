@@ -4,13 +4,11 @@ using System.Text;
 
 namespace wolvm.expressions
 {
-    public class ParseIntExpression : VMExpression
+    public class LengthExpression : VMExpression
     {
         public Value ParseExpression(params Value[] args)
         {
-            wolInt type = new wolInt();
-            type.ParseInt(((wolString)args[0].type).value);
-            return new Value(type);
+            return new Value(new wolInt(((wolString)args[0].type).value.Length));
         }
     }
 }
